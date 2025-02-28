@@ -14,6 +14,7 @@ import os
 # Import project detail view
 from ui.project_detail import display_project_detail
 from ui.knowledge_manager import display_knowledge_manager
+from ui.enhanced_knowledge_manager import display_enhanced_knowledge_manager
 
 # Configure logging
 logging.basicConfig(
@@ -165,7 +166,21 @@ elif st.session_state.page == 'Team':
 elif st.session_state.page == 'Assets':
     display_assets_page()
 elif st.session_state.page == 'Knowledge':
-    display_knowledge_manager()
+    # Check if we're using the enhanced knowledge manager
+    if "use_enhanced_knowledge_manager" not in st.session_state:
+        st.session_state.use_enhanced_knowledge_manager = True  # Default to new version
+    
+    # Add a toggle to switch between old and new versions
+    use_enhanced = st.sidebar.checkbox("Use Enhanced Knowledge Manager", value=st.session_state.use_enhanced_knowledge_manager)
+    
+    if use_enhanced != st.session_state.use_enhanced_knowledge_manager:
+        st.session_state.use_enhanced_knowledge_manager = use_enhanced
+        st.experimental_rerun()
+    
+    if st.session_state.use_enhanced_knowledge_manager:
+        display_enhanced_knowledge_manager()
+    else:
+        display_knowledge_manager()
 elif st.session_state.page == 'System':
     display_system_page()
 elif st.session_state.page == 'Project Detail' and 'current_project' in st.session_state:
@@ -195,14 +210,14 @@ def display_dashboard():
     # Project metrics
     with col1:
         st.metric("Active Projects", projects_count)
-        
+    
     # Payment metrics
     payments = api_get("payments/", [])
-    if payments:
-        total_usd = sum(p.get("amount", 0) for p in payments if p.get("currency") == "USD")
+        if payments:
+            total_usd = sum(p.get("amount", 0) for p in payments if p.get("currency") == "USD")
         with col2:
             st.metric("Total Payments", f"${total_usd:,.2f}")
-    else:
+        else:
         with col2:
             st.metric("Total Payments", "$0.00")
     
@@ -367,11 +382,11 @@ def display_projects_page():
                             # Refresh the page
                             time.sleep(1)
                             st.experimental_rerun()
-                        else:
+                            else:
                             st.error(f"Failed to create project: {response.text}")
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
-                else:
+            else:
                     st.warning("Project name is required")
     
     # List all projects
@@ -393,7 +408,7 @@ def display_projects_page():
                         st.experimental_rerun()
     else:
         st.info("No projects found. Create a project to get started.")
-
+    
 def display_finance_page():
     """Display the finance page content"""
     st.subheader("💰 Finance")
@@ -696,9 +711,9 @@ def display_assets_page():
                             # Refresh the page
                             time.sleep(1)
                             st.experimental_rerun()
-                        else:
+                    else:
                             st.error(f"Failed to add asset: {response.text}")
-                    except Exception as e:
+                except Exception as e:
                         st.error(f"Error: {str(e)}")
                 else:
                     st.warning("Asset name and project are required")
@@ -827,10 +842,10 @@ def display_system_page():
                 
                 # Display API health information
                 st.json(health_data)
-            else:
+        else:
                 st.error(f"❌ API Service is not responding properly (Status: {health_response.status_code})")
-        except Exception as e:
-            st.error(f"❌ Could not connect to API Server: {str(e)}")
+    except Exception as e:
+        st.error(f"❌ Could not connect to API Server: {str(e)}")
     
     with col2:
         st.subheader("System Information")
@@ -888,7 +903,7 @@ def display_system_page():
                         "time": response_time,
                         "size": size_kb
                     })
-                except Exception as e:
+    except Exception as e:
                     results.append({
                         "endpoint": endpoint,
                         "status": "Error",

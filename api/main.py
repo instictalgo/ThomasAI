@@ -50,6 +50,8 @@ try:
     from database.db_manager import engine, SessionLocal
     from models.base import Base
     from services.knowledge_base import GameDesignKnowledgeBase
+    from services.enhanced_knowledge_base import get_enhanced_knowledge_base
+    from models.knowledge_models import TaxonomyNode, GameDesignConcept, IndustryPractice, EducationalResource, MarketResearch
     logger.info("Successfully imported all modules")
 except Exception as e:
     logger.error(f"Failed to import modules: {str(e)}")
@@ -254,6 +256,10 @@ def health_check():
 # Import project-specific endpoints and include them
 from api.project_endpoints import router as project_router
 app.include_router(project_router)
+
+# Import enhanced knowledge endpoints
+from api.knowledge_endpoints import router as knowledge_router
+app.include_router(knowledge_router)
 
 # Schema information endpoint
 @app.get("/schema/tables")

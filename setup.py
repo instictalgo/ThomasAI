@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="thomas_ai",
-    version="1.06",
+    version="1.07",
     description="AI-powered management system for game development projects",
     author="Thomas AI Team",
     author_email="your-email@example.com",
@@ -21,13 +21,18 @@ setup(
         "pandas<2.0.0",
         "protobuf==3.20.3",
         "python-multipart==0.0.5",
-        "networkx",
+        "networkx>=2.5.1",
         "psutil",
         "pytest",
         # Document processing dependencies
         "PyPDF2==3.0.1",
         "python-docx==0.8.11",
-        "openai==1.3.0"
+        "openai==1.3.0",
+        # PostgreSQL support
+        "psycopg2-binary==2.9.3",
+        # Enhanced knowledge management dependencies
+        "scipy>=1.7.0",
+        "numpy>=1.20.0"
     ],
     extras_require={
         "dev": [
