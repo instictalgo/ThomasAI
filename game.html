@@ -1,0 +1,24 @@
+<div class="container">
+    <h1>{{ game_name }}</h1>
+    <h2>Progress</h2>
+    <p>Models: {{ progress.models.done }} / {{ progress.models.total }}</p>
+    <p>Scripts: {{ progress.scripts.done }} / {{ progress.scripts.total }}</p>
+    <p>Dungeons: {{ progress.dungeons.done }} / {{ progress.dungeons.total }}</p>
+
+    <h2>Payments</h2>
+    <p>Total spent: ${{ total_spent }}</p>
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Employee</th>
+            <th>Amount</th>
+        </tr>
+        {% for payment in payments %}
+        <tr>
+            <td>{{ payment.Date }}</td>
+            <td>{{ payment['Employee Name'] }}</td>
+            <td>{{ payment['FMV (USD)'] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>

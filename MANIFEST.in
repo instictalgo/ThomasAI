@@ -1,0 +1,16 @@
+include LICENSE
+include README.md
+include CONTRIBUTING.md
+include .env.example
+
+recursive-include Docs *
+recursive-include tests *
+recursive-exclude tests *.pyc
+recursive-exclude tests *.pyo
+recursive-exclude tests __pycache__
+
+recursive-include api/static *
+recursive-include api/templates *
+recursive-include ui/static *
+
+global-exclude *.py[cod] __pycache__ *.so .DS_Store 

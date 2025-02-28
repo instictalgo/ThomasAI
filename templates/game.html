@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ game_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-gray-900 text-white font-sans antialiased">
+    <div class="container mx-auto p-6">
+        <h1 class="text-4xl font-bold text-cyan-400 mb-6 animate-fade-in">{{ game_name }}</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="progress bg-gray-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold mb-4">Progress</h2>
+                <p>Models: {{ progress.models.done }} / {{ progress.models.total }}</p>
+                <p>Scripts: {{ progress.scripts.done }} / {{ progress.scripts.total }}</p>
+                <p>Dungeons: {{ progress.dungeons.done }} / {{ progress.dungeons.total }}</p>
+            </div>
+            <div class="payments bg-gray-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-bold mb-4">Payments</h2>
+                <p>Total Spent: ${{ total_spent }}</p>
+                <table class="w-full mt-4">
+                    <thead class="bg-cyan-600 text-white">
+                        <tr>
+                            <th class="p-2">Date</th>
+                            <th class="p-2">Employee</th>
+                            <th class="p-2">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr class="hover:bg-gray-700 transition duration-200">
+                            <td class="p-2">{{ payment.Date }}</td>
+                            <td class="p-2">{{ payment['Employee Name'] }}</td>
+                            <td class="p-2">{{ payment['FMV (USD)'] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <form action="/upload" method="post" enctype="multipart/form-data" class="mt-4">
+                    <input type="hidden" name="game_name" value="{{ game_name }}">
+                    <input type="file" name="file" class="p-2 text-gray-300">
+                    <input type="submit" value="Upload Payments CSV" class="bg-cyan-600 p-2 rounded-lg hover:bg-cyan-500 transition duration-300">
+                </form>
+            </div>
+        </div>
+        <div class="chat-container mt-6 bg-gray-800 p-6 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-4">Chat with Thomas</h2>
+            <div id="chat-log" class="bg-gray-900 p-4 rounded-lg h-64 overflow-y-auto mb-4"></div>
+            <div class="flex space-x-2">
+                <input id="message" type="text" placeholder="Ask Thomas anything..." class="flex-grow p-2 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                <button onclick="sendMessage()" class="bg-cyan-600 p-2 rounded-lg hover:bg-cyan-500 transition duration-300">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function sendMessage() {
+            const msg = document.getElementById('message').value;
+            const chatLog = document.getElementById('chat-log');
+            chatLog.innerHTML += `<div class="text-right mb-2"><span class="inline-block bg-cyan-600 p-2 rounded-lg">${msg}</span></div>`;
+            document.getElementById('message').value = '';
+            chatLog.scrollTop = chatLog.scrollHeight;
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: msg})
+            });
+            const data = await response.json();
+            chatLog.innerHTML += `<div class="text-left mb-2"><span class="inline-block bg-green-600 p-2 rounded-lg">${data.response}</span></div>`;
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+    </script>
+</body>
+</html>

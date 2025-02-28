@@ -1,0 +1,31 @@
+<html>
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Chat with Thomas</h1>
+        <div class="chat-container">
+            <div id="chat-log" class="chat-log"></div>
+            <input id="message" type="text" placeholder="Ask Thomas anything...">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <script>
+        async function sendMessage() {
+            const msg = document.getElementById('message').value;
+            const timestamp = new Date().toLocaleString();
+            document.getElementById('chat-log').innerHTML += `<div class="message-bubble user-message">${msg}<span class="timestamp">${timestamp}</span></div>`;
+            document.getElementById('message').value = '';
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: msg})
+            });
+            const data = await response.json();
+            const aiTimestamp = new Date().toLocaleString();
+            document.getElementById('chat-log').innerHTML += `<div class="message-bubble ai-message">${data.response}<span class="timestamp">${aiTimestamp}</span></div>`;
+        }
+    </script>
+</body>
+</html>

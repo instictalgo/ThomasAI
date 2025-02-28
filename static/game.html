@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ game_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-gray-900 text-white font-sans">
+    <div class="container">
+        <h1 class="text-4xl font-bold mb-6">{{ game_name }}</h1>
+        <div class="progress bg-gray-800 p-4 rounded-lg shadow-lg mb-6">
+            <h2 class="text-2xl mb-4">Progress</h2>
+            <p>Models: {{ progress.models.done }} / {{ progress.models.total }}</p>
+            <p>Scripts: {{ progress.scripts.done }} / {{ progress.scripts.total }}</p>
+            <p>Dungeons: {{ progress.dungeons.done }} / {{ progress.dungeons.total }}</p>
+        </div>
+        <div class="payments bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h2 class="text-2xl mb-4">Payments</h2>
+            <p class="mb-4">Total Spent: ${{ total_spent }}</p>
+            <table class="payments-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Employee</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>{{ payment.Date }}</td>
+                        <td>{{ payment['Employee Name'] }}</td>
+                        <td>{{ payment['FMV (USD)'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="chat-container mt-6">
+            <h2 class="text-2xl mb-4">Chat with Thomas</h2>
+            <div id="chat-log" class="chat-log"></div>
+            <div class="input-area mt-4">
+                <input id="message" type="text" placeholder="Ask Thomas anything..." class="p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                <button onclick="sendMessage()" class="bg-cyan-600 p-3 rounded-lg hover:bg-cyan-500 transition duration-300">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        async function sendMessage() {
+            const msg = document.getElementById('message').value;
+            const timestamp = new Date().toLocaleString();
+            const chatLog = document.getElementById('chat-log');
+            chatLog.innerHTML += `<div class="message-bubble user-message">${msg}<span class="timestamp">${timestamp}</span></div>`;
+            document.getElementById('message').value = '';
+            chatLog.scrollTop = chatLog.scrollHeight;
+
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message: msg})
+            });
+            const data = await response.json();
+            const aiTimestamp = new Date().toLocaleString();
+            chatLog.innerHTML += `<div class="message-bubble ai-message">${data.response}<span class="timestamp">${aiTimestamp}</span></div>`;
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+    </script>
+</body>
+</html>
