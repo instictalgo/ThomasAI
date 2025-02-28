@@ -11,6 +11,7 @@ Thomas AI is a comprehensive tool designed to streamline game development workfl
 - **API Service**: RESTful API for programmatic access to Thomas AI capabilities
 - **Dashboard**: Interactive web interface for project monitoring and management
 - **AI-Powered Analysis**: Intelligent insights for game development workflows
+- **Knowledge Management**: Game design knowledge base with document processing capabilities
 
 ## Documentation
 
@@ -78,9 +79,29 @@ The repository includes helpful scripts for common operations:
 pytest
 ```
 
+## Knowledge Management
+
+Thomas AI includes a comprehensive knowledge management system for game design:
+
+### Features
+
+- **Game Design Concepts**: Store and retrieve fundamental game design principles and mechanics
+- **Industry Practices**: Document successful approaches used in the game industry
+- **Educational Resources**: Catalog learning materials for game development
+- **Market Research**: Track market trends and player preferences
+- **Document Processing**: Extract knowledge from game design documents, research papers, and other materials
+
+### Using the Knowledge Base
+
+1. Access the Knowledge Manager from the dashboard navigation
+2. Add entries manually through the appropriate forms
+3. Upload documents to automatically extract game design knowledge
+4. Search the knowledge base to find relevant information for your projects
+
 ## Version History
 
-- **1.05** - Current release: Documentation reorganized, GitHub structure updated
+- **1.06** - Current release: Added Knowledge Management System
+- **1.05** - Documentation reorganized, GitHub structure updated
 - **1.0.0** - Initial release: Core functionality, API and dashboard interfaces
 
 ## License

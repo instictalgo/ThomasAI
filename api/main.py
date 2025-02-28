@@ -49,6 +49,7 @@ try:
     from services.asset_tracker_enhanced import AssetTracker
     from database.db_manager import engine, SessionLocal
     from models.base import Base
+    from services.knowledge_base import GameDesignKnowledgeBase
     logger.info("Successfully imported all modules")
 except Exception as e:
     logger.error(f"Failed to import modules: {str(e)}")
@@ -127,6 +128,37 @@ class TrelloBoardCreate(BaseModel):
     description: Optional[str] = None
     features: List[dict]
     team_members: List[dict]
+
+# Create API models for knowledge base
+class DesignConceptCreate(BaseModel):
+    name: str
+    description: str
+    examples: Optional[str] = None
+    references: Optional[str] = None
+
+class IndustryPracticeCreate(BaseModel):
+    name: str
+    description: str
+    companies: Optional[str] = None
+    outcomes: Optional[str] = None
+
+class EducationalResourceCreate(BaseModel):
+    title: str
+    type: str
+    url: Optional[str] = None
+    description: str
+    topics: Optional[str] = None
+
+class MarketResearchCreate(BaseModel):
+    title: str
+    date: str
+    source: Optional[str] = None
+    findings: str
+    implications: Optional[str] = None
+
+class SearchQuery(BaseModel):
+    query: str
+    category: Optional[str] = None
 
 # API Routes
 
@@ -266,6 +298,62 @@ def get_schema_info():
     except Exception as e:
         logger.error(f"Failed to get schema info: {str(e)}")
         return []
+
+# Knowledge Base endpoints
+@app.post("/knowledge/design-concept", tags=["Knowledge Base"])
+def add_design_concept(concept: DesignConceptCreate):
+    """Add a new game design concept to the knowledge base."""
+    try:
+        kb = GameDesignKnowledgeBase()
+        kb.add_design_concept(concept.name, concept.description, concept.examples, concept.references)
+        return {"status": "success", "message": f"Added design concept: {concept.name}"}
+    except Exception as e:
+        logger.error(f"Error adding design concept: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/knowledge/industry-practice", tags=["Knowledge Base"])
+def add_industry_practice(practice: IndustryPracticeCreate):
+    """Add a new industry practice to the knowledge base."""
+    try:
+        kb = GameDesignKnowledgeBase()
+        kb.add_industry_practice(practice.name, practice.description, practice.companies, practice.outcomes)
+        return {"status": "success", "message": f"Added industry practice: {practice.name}"}
+    except Exception as e:
+        logger.error(f"Error adding industry practice: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/knowledge/educational-resource", tags=["Knowledge Base"])
+def add_educational_resource(resource: EducationalResourceCreate):
+    """Add a new educational resource to the knowledge base."""
+    try:
+        kb = GameDesignKnowledgeBase()
+        kb.add_educational_resource(resource.title, resource.type, resource.url, resource.description, resource.topics)
+        return {"status": "success", "message": f"Added educational resource: {resource.title}"}
+    except Exception as e:
+        logger.error(f"Error adding educational resource: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/knowledge/market-research", tags=["Knowledge Base"])
+def add_market_research(research: MarketResearchCreate):
+    """Add new market research to the knowledge base."""
+    try:
+        kb = GameDesignKnowledgeBase()
+        kb.add_market_research(research.title, research.date, research.source, research.findings, research.implications)
+        return {"status": "success", "message": f"Added market research: {research.title}"}
+    except Exception as e:
+        logger.error(f"Error adding market research: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/knowledge/search", tags=["Knowledge Base"])
+def search_knowledge_base(search: SearchQuery):
+    """Search the knowledge base for relevant information."""
+    try:
+        kb = GameDesignKnowledgeBase()
+        results = kb.search_knowledge_base(search.query, search.category)
+        return {"status": "success", "results": results}
+    except Exception as e:
+        logger.error(f"Error searching knowledge base: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Modified server startup to accept port from command line
 if __name__ == "__main__":

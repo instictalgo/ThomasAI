@@ -55,15 +55,28 @@ The projects section allows you to:
 - Assign team members
 - Track project progress
 
-#### 5. Chat with Thomas
+#### 5. Knowledge Management
+
+The knowledge management section allows you to:
+
+- Store and retrieve game design concepts
+- Document industry practices
+- Catalog educational resources
+- Track market research
+- Extract knowledge from documents
+
+For detailed information, see the [Knowledge Management](knowledge_management.md) documentation.
+
+#### 6. Chat with Thomas
 
 The AI-powered chat interface allows you to:
 
 - Ask questions about your projects and payments
 - Get insights and recommendations
 - Request analyses of project data
+- Access game design knowledge
 
-#### 6. Assets
+#### 7. Assets
 
 The assets section helps you:
 
@@ -71,7 +84,7 @@ The assets section helps you:
 - Monitor progress and dependencies
 - Assign assets to team members
 
-#### 7. System Status
+#### 8. System Status
 
 The system status page provides:
 
@@ -93,6 +106,7 @@ Access the API documentation at `http://localhost:8002/docs`.
 - `POST /projects/`: Create a new project
 - `GET /payments/`: List all payments
 - `POST /payments/`: Create a new payment
+- `POST /knowledge/search`: Search the knowledge base
 - `GET /health`: Check API health
 
 ### API Authentication
@@ -129,6 +143,18 @@ The "Chat with Thomas" feature provides:
 - Project recommendations
 - Payment analysis
 - Budget forecasting
+- Game design expertise
+
+### Knowledge Management
+
+The knowledge management system helps you:
+
+- Build a repository of game design knowledge
+- Extract information from design documents
+- Search for relevant concepts and practices
+- Enhance Thomas AI's understanding of game development
+
+For detailed information, see the [Knowledge Management](knowledge_management.md) documentation.
 
 ### Data Context Controls
 
@@ -138,6 +164,7 @@ When chatting with Thomas, you can select what information the AI can access:
 - Payment Data
 - Employee Information
 - Asset Progress
+- Game Design Knowledge
 
 ## Troubleshooting
 

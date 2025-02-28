@@ -11,6 +11,10 @@ import json
 import sys
 import os
 
+# Import project detail view
+from ui.project_detail import display_project_detail
+from ui.knowledge_manager import display_knowledge_manager
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -127,55 +131,96 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Title and description
-st.title("🎮 Thomas AI Management System")
-st.markdown("""
-Your all-in-one dashboard for managing game development projects, payments, and assets.
-""")
+# Initialize session state for page navigation
+if 'page' not in st.session_state:
+    st.session_state.page = 'Dashboard'
 
-# Sidebar navigation with modern styling
-st.sidebar.image("https://i.imgur.com/ZDxo6FA.png", width=50)  # Replace with your logo
+# Sidebar navigation
 st.sidebar.title("Navigation")
+page_selections = ["Dashboard", "Projects", "Finance", "Team", "Assets", "Knowledge", "System"]
+selected_page = st.sidebar.radio("Go to", page_selections)
 
-page = st.sidebar.radio(
-    "Go to",
-    ["Dashboard", "Payments", "Payment Details", "Projects", "Chat with Thomas", "Assets", "System Status"]
-)
+# Update the page state when a new page is selected
+if selected_page != st.session_state.page:
+    # Reset any page-specific state if needed
+    if selected_page == 'Dashboard':
+        # Reset any dashboard-specific state
+        pass
+    
+    st.session_state.page = selected_page
+    st.experimental_rerun()
 
-# Dashboard main page
-if page == "Dashboard":
-    # Get data for dashboard
-    projects = api_get("projects/", [])
-    payments = api_get("payments/", [])
+# Main content
+st.title("🎮 Thomas AI Management System")
+
+# Display different content based on the current page
+if st.session_state.page == 'Dashboard':
+    display_dashboard()
+elif st.session_state.page == 'Projects':
+    display_projects_page()
+elif st.session_state.page == 'Finance':
+    display_finance_page()
+elif st.session_state.page == 'Team':
+    display_team_page()
+elif st.session_state.page == 'Assets':
+    display_assets_page()
+elif st.session_state.page == 'Knowledge':
+    display_knowledge_manager()
+elif st.session_state.page == 'System':
+    display_system_page()
+elif st.session_state.page == 'Project Detail' and 'current_project' in st.session_state:
+    # Go back button
+    if st.button("← Back to Projects"):
+        st.session_state.page = 'Projects'
+        st.experimental_rerun()
     
-    # Show key metrics
-    st.subheader("Business Overview")
+    # Display the project detail
+    display_project_detail(st.session_state.current_project)
+else:
+    # Default to dashboard if the page is not recognized
+    st.session_state.page = 'Dashboard'
+    st.experimental_rerun()
+
+# Define page content functions
+def display_dashboard():
+    """Display the main dashboard content"""
+    st.subheader("📊 Overview")
+
+    # Summary metrics at the top
+    col1, col2, col3, col4 = st.columns(4)
     
-    col1, col2, col3 = st.columns(3)
+    # Fetch summary data
+    projects_count = len(api_get("projects/", []))
     
+    # Project metrics
     with col1:
-        st.metric("Active Projects", len(projects) if projects else 0)
+        st.metric("Active Projects", projects_count)
+        
+    # Payment metrics
+    payments = api_get("payments/", [])
+    if payments:
+        total_usd = sum(p.get("amount", 0) for p in payments if p.get("currency") == "USD")
+        with col2:
+            st.metric("Total Payments", f"${total_usd:,.2f}")
+    else:
+        with col2:
+            st.metric("Total Payments", "$0.00")
     
-    with col2:
-        if payments:
-            # Convert SOL to USD for correct total calculation
-            total_usd = sum(p.get("amount", 0) for p in payments if p.get("currency") == "USD")
-            total_sol = sum(p.get("amount", 0) for p in payments if p.get("currency") == "SOL")
-            # Assuming 1 SOL = 150 USD for conversion
-            total_payments = total_usd + (total_sol * 150)
-            st.metric("Total Payments", f"${total_payments:,.2f}")
-        else:
-            st.metric("Total Payments", "$0")
-    
+    # Team metrics
+    employees = api_get("payments/employees", [])
     with col3:
-        if payments:
-            employees = len(set(p.get("employee_id", "") for p in payments))
-            st.metric("Team Members", employees)
-        else:
-            st.metric("Team Members", 0)
+        st.metric("Team Members", len(employees) if employees else 0)
     
-    # Projects overview
-    st.subheader("Projects")
+    # Asset metrics
+    assets = api_get("assets/", [])
+    with col4:
+        st.metric("Assets", len(assets) if assets else 0)
+    
+    # Active Projects
+    st.subheader("Active Projects")
+    
+    # Get projects data
+    projects = api_get("projects/", [])
     
     if projects:
         # Create a nice grid of project cards
@@ -198,354 +243,592 @@ if page == "Dashboard":
     st.subheader("Recent Payments")
     
     if payments:
-        # Sort by date (newest first)
-        payments.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-        
-        # Show only the 5 most recent payments
-        recent_payments = payments[:5]
+        # Create a dataframe for the payments
         payment_data = []
-        
-        for p in recent_payments:
+        for payment in payments[:5]:  # Show only the 5 most recent payments
             payment_data.append({
-                "Date": p.get("created_at", "Unknown"),
-                "Employee": p.get("employee_id", "Unknown"),
-                "Amount": f"{p.get('currency', '')} {p.get('amount', 0)}",
-                "Method": p.get("payment_method", "Unknown"),
-                "Status": p.get("status", "Unknown").capitalize()
+                "Date": payment.get("date", "N/A"),
+                "Recipient": payment.get("recipient", "Unknown"),
+                "Amount": f"{payment.get('currency', 'USD')} {payment.get('amount', 0):,.2f}",
+                "Project": payment.get("project", "N/A"),
+                "Status": payment.get("status", "Completed")
             })
         
-        if payment_data:
-            st.table(pd.DataFrame(payment_data))
-        else:
-            st.info("No payment records found")
+        payment_df = pd.DataFrame(payment_data)
+        st.table(payment_df)
     else:
-        st.info("No payment records found")
-
-elif page == "Payments":
-    st.header("Payment Management")
+        st.info("No payment data available.")
     
-    # Create payment form
-    with st.form("payment_form"):
-        st.subheader("Create New Payment")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            employee_id = st.text_input("Employee Name")
-            amount = st.number_input("Amount", min_value=0.01, format="%.2f")
-        
-        with col2:
-            currency = st.selectbox("Currency", ["USD", "SOL"])
-            payment_method = st.selectbox("Payment Method", ["paypal", "crypto_sol", "bank_transfer"])
-        
-        submitted = st.form_submit_button("Create Payment")
-        if submitted:
-            if not employee_id:
-                st.error("Employee name is required")
-            else:
-                payment_data = {
-                    "employee_id": employee_id,
-                    "amount": amount,
-                    "currency": currency,
-                    "payment_method": payment_method
-                }
-                try:
-                    response = requests.post(f"{API_BASE_URL}/payments/", json=payment_data)
-                    if response.status_code == 200:
-                        st.success(f"Payment created successfully!")
-                    else:
-                        st.error(f"Failed to create payment: {response.text}")
-                except Exception as e:
-                    st.error(f"Connection error: {str(e)}")
-    
-    # List payments
-    st.subheader("Payment History")
-    payments = api_get("payments/", [])
+    # Financial overview chart
+    st.subheader("Financial Overview")
     
     if payments:
-        # Sort by date (newest first)
-        payments.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        # Group payments by month and project
+        payment_by_month_project = {}
+        for payment in payments:
+            date = payment.get("date", "")
+            if date:
+                month = date[:7]  # Get YYYY-MM
+                project = payment.get("project", "Unknown")
+                amount = payment.get("amount", 0)
+                currency = payment.get("currency", "USD")
+                
+                # Convert to USD for consistency
+                usd_amount = amount
+                if currency == "SOL":
+                    usd_amount = amount * 150  # Assuming 1 SOL = $150 USD
+                
+                if month not in payment_by_month_project:
+                    payment_by_month_project[month] = {}
+                
+                if project not in payment_by_month_project[month]:
+                    payment_by_month_project[month][project] = 0
+                
+                payment_by_month_project[month][project] += usd_amount
         
-        # Group by employee
-        employees = {}
-        for p in payments:
-            employee = p.get("employee_id", "Unknown")
-            if employee not in employees:
-                employees[employee] = []
-            employees[employee].append(p)
-        
-        # Create tabs for All and By Employee
-        tab1, tab2 = st.tabs(["All Payments", "By Employee"])
-        
-        with tab1:
-            # Show all payments in a table
-            payment_data = []
-            for p in payments:
-                payment_data.append({
-                    "Date": p.get("created_at", "Unknown"),
-                    "Employee": p.get("employee_id", "Unknown"),
-                    "Amount": f"{p.get('currency', '')} {p.get('amount', 0)}",
-                    "USD Equivalent": f"${p.get('amount', 0) * 150:,.2f}" if p.get('currency') == "SOL" else f"${p.get('amount', 0):,.2f}",
-                    "Method": p.get("payment_method", "Unknown"),
-                    "Status": p.get("status", "Unknown").capitalize()
+        # Convert to dataframe
+        fin_data = []
+        for month, projects in payment_by_month_project.items():
+            for project, amount in projects.items():
+                fin_data.append({
+                    "Month": month,
+                    "Project": project,
+                    "Amount": amount
                 })
-            
-            if payment_data:
-                st.dataframe(pd.DataFrame(payment_data))
-            else:
-                st.info("No payment records found")
         
-        with tab2:
-            # Show payments grouped by employee
-            for employee, emp_payments in employees.items():
-                with st.expander(f"{employee} ({len(emp_payments)} payments)"):
-                    # Calculate totals
-                    total_usd = sum(p.get("amount", 0) for p in emp_payments if p.get("currency") == "USD")
-                    total_sol = sum(p.get("amount", 0) for p in emp_payments if p.get("currency") == "SOL")
-                    total_equivalent = total_usd + (total_sol * 150)
-                    
-                    # Show totals
-                    st.metric("Total Payments (USD Equivalent)", f"${total_equivalent:,.2f}")
-                    
-                    # Show payment history
-                    emp_payment_data = []
-                    for p in emp_payments:
-                        emp_payment_data.append({
-                            "Date": p.get("created_at", "Unknown"),
-                            "Amount": f"{p.get('currency', '')} {p.get('amount', 0)}",
-                            "Method": p.get("payment_method", "Unknown"),
-                            "Status": p.get("status", "Unknown").capitalize()
-                        })
-                    
-                    st.dataframe(pd.DataFrame(emp_payment_data))
-    else:
-        st.info("No payment records found")
-
-elif page == "Payment Details":
-    st.header("Payment Details by Employee")
-    
-    # Get all employees
-    employees = api_get("payments/employees", [])
-    
-    if employees:
-        selected_employee = st.selectbox("Select Employee", employees)
-        
-        if selected_employee:
-            st.subheader(f"Payment History for {selected_employee}")
+        if fin_data:
+            fin_df = pd.DataFrame(fin_data)
             
-            # Get payments for selected employee
-            employee_payments = api_get(f"payments/employee/{selected_employee}", [])
+            # Sort by month
+            fin_df["Month"] = pd.to_datetime(fin_df["Month"])
+            fin_df = fin_df.sort_values("Month")
+            fin_df["Month"] = fin_df["Month"].dt.strftime("%b %Y")
             
-            if employee_payments:
-                # Calculate totals
-                total_usd = sum(p.get("amount", 0) for p in employee_payments if p.get("currency") == "USD")
-                total_sol = sum(p.get("amount", 0) for p in employee_payments if p.get("currency") == "SOL")
-                total_equivalent = total_usd + (total_sol * 150)
-                
-                # Show totals
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Total USD", f"${total_usd:,.2f}")
-                with col2:
-                    st.metric("Total SOL", f"{total_sol:,.2f}")
-                with col3:
-                    st.metric("USD Equivalent", f"${total_equivalent:,.2f}")
-                
-                # Prepare data for visualization
-                if len(employee_payments) > 1:
-                    payment_dates = []
-                    payment_amounts = []
-                    
-                    for payment in sorted(employee_payments, key=lambda x: x.get("created_at", "")):
-                        date = payment.get("created_at", "Unknown")
-                        amount = payment.get("amount", 0)
-                        if payment.get("currency") == "SOL":
-                            amount = amount * 150  # Convert to USD
-                        
-                        payment_dates.append(date)
-                        payment_amounts.append(amount)
-                    
-                    # Create a dataframe for visualization
-                    df = pd.DataFrame({
-                        "Date": payment_dates,
-                        "Amount (USD)": payment_amounts
-                    })
-                    
-                    # Create payment trend visualization
-                    fig = px.line(
-                        df,
-                        x="Date",
-                        y="Amount (USD)",
-                        title=f"Payments to {selected_employee} Over Time",
-                        markers=True
-                    )
-                    st.plotly_chart(fig, use_container_width=True)
-                
-                # Show each payment in an expander
-                st.subheader("Payment Details")
-                
-                for payment in sorted(employee_payments, key=lambda x: x.get("created_at", ""), reverse=True):
-                    with st.expander(f"Payment on {payment.get('created_at', 'Unknown Date')} - {payment.get('currency', '')} {payment.get('amount', '')}"):
-                        cols = st.columns([1, 3])
-                        
-                        with cols[0]:
-                            method = payment.get("payment_method", "").lower()
-                            if "paypal" in method:
-                                st.image("https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_37x23.jpg", width=100)
-                            elif "crypto" in method or "sol" in method:
-                                st.image("https://cryptologos.cc/logos/solana-sol-logo.png", width=100)
-                            elif "bank" in method:
-                                st.image("https://cdn-icons-png.flaticon.com/512/2830/2830284.png", width=100)
-                            else:
-                                st.image("https://cdn-icons-png.flaticon.com/512/1019/1019607.png", width=100)
-                        
-                        with cols[1]:
-                            st.write(f"**Amount:** {payment.get('currency')} {payment.get('amount')}")
-                            if payment.get('currency') == "SOL":
-                                st.write(f"**USD Equivalent:** ${payment.get('amount', 0) * 150:,.2f}")
-                            st.write(f"**Method:** {payment.get('payment_method', 'Unknown')}")
-                            st.write(f"**Status:** {payment.get('status', 'Unknown')}")
-                            st.write(f"**Transaction ID:** {payment.get('transaction_id', 'N/A')}")
-                            
-                            # Add payment link if available
-                            if payment.get("payment_link"):
-                                st.write(f"**Payment Link:** [View Transaction]({payment.get('payment_link')})")
-            else:
-                st.info(f"No payments found for {selected_employee}")
+            # Create a stacked bar chart
+            fig = px.bar(
+                fin_df, 
+                x="Month", 
+                y="Amount", 
+                color="Project",
+                title="Monthly Payments by Project (USD)",
+                labels={"Amount": "Amount (USD)", "Month": ""},
+                color_discrete_sequence=px.colors.qualitative.Pastel
+            )
+            
+            st.plotly_chart(fig)
+        else:
+            st.info("Not enough financial data for visualization.")
     else:
-        st.error("Could not retrieve employee list. Is the API server running?")
+        st.info("No financial data available.")
 
-# Projects page
-elif page == "Projects":
-    st.header("Project Management")
+def display_projects_page():
+    """Display the projects page content"""
+    st.subheader("📁 Projects")
     
-    # Project list with modern styling
-    st.subheader("Existing Projects")
+    # Add new project form
+    with st.expander("Add New Project"):
+        with st.form("new_project_form"):
+            project_name = st.text_input("Project Name")
+            project_description = st.text_area("Description")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                start_date = st.date_input("Start Date")
+            with col2:
+                end_date = st.date_input("End Date")
+            
+            budget = st.number_input("Budget (USD)", min_value=0.0, step=1000.0)
+            
+            submit_button = st.form_submit_button("Create Project")
+            
+            if submit_button:
+                if project_name:
+                    # Format the data for the API
+                    new_project = {
+                        "name": project_name,
+                        "description": project_description,
+                        "start_date": start_date.isoformat(),
+                        "end_date": end_date.isoformat(),
+                        "total_budget": budget
+                    }
+                    
+                    # Send to the API
+                    try:
+                        response = requests.post(
+                            f"{API_BASE_URL}/projects/",
+                            json=new_project
+                        )
+                        
+                        if response.status_code == 200 or response.status_code == 201:
+                            st.success("Project created successfully!")
+                            # Clear cache to show the new project
+                            if "projects/" in response_cache:
+                                del response_cache["projects/"]
+                            # Refresh the page
+                            time.sleep(1)
+                            st.experimental_rerun()
+                        else:
+                            st.error(f"Failed to create project: {response.text}")
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+                else:
+                    st.warning("Project name is required")
     
+    # List all projects
     projects = api_get("projects/", [])
+    
     if projects:
-        # Display projects in cards
+        # Create a nice grid of project cards
         cols = st.columns(3)
         for i, project in enumerate(projects):
             with cols[i % 3]:
                 with st.container():
                     st.markdown(f"### {project.get('name', 'Unnamed Project')}")
+                    st.progress(0.6)  # Mock progress - would need real data
                     st.markdown(f"**Budget:** ${project.get('total_budget', 0):,.2f}")
                     st.markdown(f"**Timeline:** {project.get('start_date', 'N/A')} to {project.get('end_date', 'N/A')}")
-                    
-                    # Project progress (mock data - would need real calculation)
-                    progress = 0.6
-                    st.progress(progress)
-                    st.markdown(f"**Progress:** {int(progress * 100)}% complete")
-                    
-                    # Button to view project details
                     if st.button(f"View Details", key=f"view_{project.get('id')}"):
-                        # In a real app, this would navigate to a project details page
                         st.session_state.current_project = project.get('id')
                         st.session_state.page = 'Project Detail'
                         st.experimental_rerun()
     else:
         st.info("No projects found. Create a project to get started.")
+
+def display_finance_page():
+    """Display the finance page content"""
+    st.subheader("💰 Finance")
     
-    # Create project form below existing projects
-    st.header("Create New Project")
+    # Add new payment form
+    with st.expander("Add New Payment"):
+        with st.form("new_payment_form"):
+            projects = api_get("projects/", [])
+            project_names = ["None"] + [p["name"] for p in projects]
+            selected_project = st.selectbox("Project", project_names)
+            
+            recipient = st.text_input("Recipient")
+            amount = st.number_input("Amount", min_value=0.0, step=100.0)
+            
+            currency = st.selectbox("Currency", ["USD", "SOL"])
+            payment_date = st.date_input("Payment Date")
+            payment_method = st.selectbox("Payment Method", ["Bank Transfer", "PayPal", "Crypto", "Check", "Cash"])
+            
+            submit_button = st.form_submit_button("Record Payment")
+            
+            if submit_button:
+                if recipient and amount > 0:
+                    # Get project ID if a project was selected
+                    project_id = None
+                    if selected_project != "None":
+                        for p in projects:
+                            if p["name"] == selected_project:
+                                project_id = p["id"]
+                                break
+                    
+                    # Format the data for the API
+                    new_payment = {
+                        "recipient": recipient,
+                        "amount": amount,
+                        "currency": currency,
+                        "date": payment_date.isoformat(),
+                        "method": payment_method,
+                        "project": project_id
+                    }
+                    
+                    # Send to the API
+                    try:
+                        response = requests.post(
+                            f"{API_BASE_URL}/payments/",
+                            json=new_payment
+                        )
+                        
+                        if response.status_code == 200 or response.status_code == 201:
+                            st.success("Payment recorded successfully!")
+                            # Clear cache to show the new payment
+                            if "payments/" in response_cache:
+                                del response_cache["payments/"]
+                            # Refresh the page
+                            time.sleep(1)
+                            st.experimental_rerun()
+                        else:
+                            st.error(f"Failed to record payment: {response.text}")
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+                else:
+                    st.warning("Recipient and amount are required")
     
-    with st.form("project_form"):
-        col1, col2 = st.columns(2)
+    # List all payments
+    payments = api_get("payments/", [])
+    
+    if payments:
+        # Create tabs for different views
+        tab1, tab2, tab3 = st.tabs(["All Payments", "By Project", "By Recipient"])
         
-        with col1:
-            project_name = st.text_input("Project Name")
-            total_budget = st.number_input("Total Budget", min_value=1000.0, value=20000.0, format="%.2f")
-        
-        with col2:
-            start_date = st.date_input("Start Date")
-            end_date = st.date_input("End Date")
-        
-        # Additional fields
-        st.subheader("Initial Team")
-        team_members = st.text_area("Enter team members (one per line)")
-        
-        st.subheader("Project Description")
-        description = st.text_area("Project description and goals")
-        
-        submitted = st.form_submit_button("Create Project")
-        if submitted:
-            if not project_name:
-                st.error("Project name is required")
+        with tab1:
+            # Create a dataframe for the payments
+            payment_data = []
+            for payment in payments:
+                payment_data.append({
+                    "Date": payment.get("date", "N/A"),
+                    "Recipient": payment.get("recipient", "Unknown"),
+                    "Amount": payment.get("amount", 0),
+                    "Currency": payment.get("currency", "USD"),
+                    "Project": payment.get("project", "N/A"),
+                    "Method": payment.get("method", "N/A")
+                })
+            
+            if payment_data:
+                payment_df = pd.DataFrame(payment_data)
+                
+                # Sort by date
+                payment_df["Date"] = pd.to_datetime(payment_df["Date"])
+                payment_df = payment_df.sort_values("Date", ascending=False)
+                payment_df["Date"] = payment_df["Date"].dt.strftime("%Y-%m-%d")
+                
+                # Display as a table
+                st.dataframe(payment_df)
             else:
-                project_data = {
-                    "name": project_name,
-                    "total_budget": total_budget,
-                    "start_date": start_date.strftime("%Y-%m-%d"),
-                    "end_date": end_date.strftime("%Y-%m-%d"),
-                    "description": description,
-                    "team_members": team_members.split("\n") if team_members else []
-                }
-                try:
-                    response = requests.post(f"{API_BASE_URL}/projects/", json=project_data)
-                    if response.status_code == 200:
-                        st.success(f"Project '{project_name}' created successfully!")
-                    else:
-                        st.error(f"Failed to create project: {response.text}")
-                except Exception as e:
-                    st.error(f"Connection error: {str(e)}")
+                st.info("No payment data available.")
+        
+        with tab2:
+            # Group payments by project
+            payment_by_project = {}
+            for payment in payments:
+                project = payment.get("project", "Unknown")
+                amount = payment.get("amount", 0)
+                currency = payment.get("currency", "USD")
+                
+                if project not in payment_by_project:
+                    payment_by_project[project] = {"USD": 0, "SOL": 0}
+                
+                payment_by_project[project][currency] += amount
+            
+            # Create a dataframe
+            project_data = []
+            for project, amounts in payment_by_project.items():
+                project_data.append({
+                    "Project": project,
+                    "USD": amounts["USD"],
+                    "SOL": amounts["SOL"],
+                    "Total (USD)": amounts["USD"] + (amounts["SOL"] * 150)  # Assuming 1 SOL = $150 USD
+                })
+            
+            if project_data:
+                project_df = pd.DataFrame(project_data)
+                project_df = project_df.sort_values("Total (USD)", ascending=False)
+                
+                # Display as a table
+                st.dataframe(project_df)
+                
+                # Create a pie chart of payment distribution
+                fig = px.pie(
+                    project_df, 
+                    values="Total (USD)",
+                    names="Project",
+                    title="Payment Distribution by Project",
+                    color_discrete_sequence=px.colors.qualitative.Pastel
+                )
+                
+                st.plotly_chart(fig)
+            else:
+                st.info("No payment data available.")
+        
+        with tab3:
+            # Group payments by recipient
+            payment_by_recipient = {}
+            for payment in payments:
+                recipient = payment.get("recipient", "Unknown")
+                amount = payment.get("amount", 0)
+                currency = payment.get("currency", "USD")
+                
+                if recipient not in payment_by_recipient:
+                    payment_by_recipient[recipient] = {"USD": 0, "SOL": 0}
+                
+                payment_by_recipient[recipient][currency] += amount
+            
+            # Create a dataframe
+            recipient_data = []
+            for recipient, amounts in payment_by_recipient.items():
+                recipient_data.append({
+                    "Recipient": recipient,
+                    "USD": amounts["USD"],
+                    "SOL": amounts["SOL"],
+                    "Total (USD)": amounts["USD"] + (amounts["SOL"] * 150)  # Assuming 1 SOL = $150 USD
+                })
+            
+            if recipient_data:
+                recipient_df = pd.DataFrame(recipient_data)
+                recipient_df = recipient_df.sort_values("Total (USD)", ascending=False)
+                
+                # Display as a table
+                st.dataframe(recipient_df)
+                
+                # Create a bar chart of payment distribution
+                fig = px.bar(
+                    recipient_df, 
+                    x="Recipient",
+                    y="Total (USD)",
+                    title="Total Payments by Recipient",
+                    color_discrete_sequence=px.colors.qualitative.Pastel
+                )
+                
+                st.plotly_chart(fig)
+            else:
+                st.info("No payment data available.")
+    else:
+        st.info("No payment data available. Record a payment to get started.")
 
-# Chat with Thomas page
-elif page == "Chat with Thomas":
-    # Import and run chat interface
-    try:
-        from ui.chat_with_thomas import main
-        main()
-    except Exception as e:
-        st.error(f"Error loading chat interface: {str(e)}")
-        st.info("The Thomas AI chat interface couldn't be loaded. Is the required module installed?")
-
-# Assets page
-elif page == "Assets":
-    st.header("Asset Management")
-    st.info("Asset management interface is under development")
-
-# System Status page
-elif page == "System Status":
-    st.subheader("System Status")
+def display_team_page():
+    """Display the team page content"""
+    st.subheader("👥 Team")
     
-    # Create columns for statuses
+    # List all team members (derived from payment recipients)
+    employees = api_get("payments/employees", [])
+    
+    if employees:
+        # Create tabs for different views
+        tab1, tab2 = st.tabs(["Team Members", "Payment History"])
+        
+        with tab1:
+            # Create a grid of team member cards
+            cols = st.columns(4)
+            for i, employee in enumerate(employees):
+                with cols[i % 4]:
+                    with st.container():
+                        st.markdown(f"### {employee}")
+                        st.markdown("**Role:** Developer")  # This would come from a real data source
+                        
+                        # Get payments for this employee
+                        employee_payments = api_get(f"payments/employee/{employee}", [])
+                        
+                        if employee_payments:
+                            total_usd = sum(p.get("amount", 0) for p in employee_payments if p.get("currency") == "USD")
+                            total_sol = sum(p.get("amount", 0) for p in employee_payments if p.get("currency") == "SOL")
+                            
+                            st.markdown(f"**Total Paid:** ${total_usd:,.2f} USD, {total_sol:,.2f} SOL")
+                            st.markdown(f"**Last Payment:** {employee_payments[0].get('date', 'N/A')}")
+        
+        with tab2:
+            # Display payment history for all team members
+            payment_data = []
+            for employee in employees:
+                employee_payments = api_get(f"payments/employee/{employee}", [])
+                
+                for payment in employee_payments:
+                    payment_data.append({
+                        "Date": payment.get("date", "N/A"),
+                        "Recipient": employee,
+                        "Amount": payment.get("amount", 0),
+                        "Currency": payment.get("currency", "USD"),
+                        "Project": payment.get("project", "N/A"),
+                        "Method": payment.get("method", "N/A")
+                    })
+            
+            if payment_data:
+                payment_df = pd.DataFrame(payment_data)
+                
+                # Sort by date
+                payment_df["Date"] = pd.to_datetime(payment_df["Date"])
+                payment_df = payment_df.sort_values("Date", ascending=False)
+                payment_df["Date"] = payment_df["Date"].dt.strftime("%Y-%m-%d")
+                
+                # Display as a table
+                st.dataframe(payment_df)
+            else:
+                st.info("No payment data available.")
+    else:
+        st.info("No team members found. Record a payment to add team members.")
+
+def display_assets_page():
+    """Display the assets page content"""
+    st.subheader("🎨 Assets")
+    
+    # Add new asset form
+    with st.expander("Add New Asset"):
+        with st.form("new_asset_form"):
+            projects = api_get("projects/", [])
+            project_names = [p["name"] for p in projects] if projects else ["None"]
+            selected_project = st.selectbox("Project", project_names)
+            
+            asset_name = st.text_input("Asset Name")
+            asset_type = st.selectbox("Asset Type", ["3D Model", "Texture", "Animation", "Sound", "Script", "UI", "Other"])
+            status = st.selectbox("Status", ["Not Started", "In Progress", "Review", "Completed"])
+            progress = st.slider("Progress", 0, 100, 0)
+            
+            employees = api_get("payments/employees", [])
+            assigned_to = st.selectbox("Assigned To", ["Unassigned"] + employees if employees else ["Unassigned"])
+            
+            due_date = st.date_input("Due Date")
+            
+            submit_button = st.form_submit_button("Add Asset")
+            
+            if submit_button:
+                if asset_name and selected_project != "None":
+                    # Get project ID
+                    project_id = None
+                    for p in projects:
+                        if p["name"] == selected_project:
+                            project_id = p["id"]
+                            break
+                    
+                    # Format the data for the API
+                    new_asset = {
+                        "name": asset_name,
+                        "asset_type": asset_type,
+                        "status": status,
+                        "progress": progress,
+                        "assigned_to": assigned_to if assigned_to != "Unassigned" else None,
+                        "due_date": due_date.isoformat(),
+                        "project_id": project_id
+                    }
+                    
+                    # Send to the API
+                    try:
+                        response = requests.post(
+                            f"{API_BASE_URL}/assets/",
+                            json=new_asset
+                        )
+                        
+                        if response.status_code == 200 or response.status_code == 201:
+                            st.success("Asset added successfully!")
+                            # Clear cache to show the new asset
+                            if "assets/" in response_cache:
+                                del response_cache["assets/"]
+                            # Refresh the page
+                            time.sleep(1)
+                            st.experimental_rerun()
+                        else:
+                            st.error(f"Failed to add asset: {response.text}")
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+                else:
+                    st.warning("Asset name and project are required")
+    
+    # List all assets
+    assets = api_get("assets/", [])
+    
+    if assets:
+        # Create tabs for different views
+        tab1, tab2, tab3 = st.tabs(["All Assets", "By Project", "By Status"])
+        
+        with tab1:
+            # Create a dataframe for the assets
+            asset_data = []
+            for asset in assets:
+                asset_data.append({
+                    "Name": asset.get("name", "Unnamed"),
+                    "Type": asset.get("asset_type", "Unknown"),
+                    "Status": asset.get("status", "Unknown"),
+                    "Progress": asset.get("progress", 0),
+                    "Assigned To": asset.get("assigned_to", "Unassigned"),
+                    "Due Date": asset.get("due_date", "N/A"),
+                    "Project": asset.get("project", "Unknown")
+                })
+            
+            if asset_data:
+                asset_df = pd.DataFrame(asset_data)
+                
+                # Sort by due date
+                asset_df["Due Date"] = pd.to_datetime(asset_df["Due Date"])
+                asset_df = asset_df.sort_values("Due Date")
+                asset_df["Due Date"] = asset_df["Due Date"].dt.strftime("%Y-%m-%d")
+                
+                # Display as a table
+                st.dataframe(asset_df)
+            else:
+                st.info("No asset data available.")
+        
+        with tab2:
+            # Group assets by project
+            asset_by_project = {}
+            for asset in assets:
+                project = asset.get("project", "Unknown")
+                
+                if project not in asset_by_project:
+                    asset_by_project[project] = []
+                
+                asset_by_project[project].append(asset)
+            
+            # Create tabs for each project
+            project_tabs = st.tabs(list(asset_by_project.keys()))
+            
+            for i, (project, project_assets) in enumerate(asset_by_project.items()):
+                with project_tabs[i]:
+                    for asset in project_assets:
+                        with st.expander(f"{asset.get('name', 'Unnamed Asset')} - {asset.get('progress', 0)}% complete"):
+                            st.write(f"**Type:** {asset.get('asset_type', 'Unknown')}")
+                            st.write(f"**Assigned to:** {asset.get('assigned_to', 'Unassigned')}")
+                            st.write(f"**Status:** {asset.get('status', 'Unknown')}")
+                            st.write(f"**Due date:** {asset.get('due_date', 'Not set')}")
+                            st.progress(asset.get('progress', 0) / 100)
+        
+        with tab3:
+            # Group assets by status
+            asset_by_status = {}
+            for asset in assets:
+                status = asset.get("status", "Unknown")
+                
+                if status not in asset_by_status:
+                    asset_by_status[status] = []
+                
+                asset_by_status[status].append(asset)
+            
+            # Create a visualization of assets by status
+            status_counts = {status: len(assets) for status, assets in asset_by_status.items()}
+            
+            # Create a bar chart
+            status_df = pd.DataFrame({
+                "Status": list(status_counts.keys()),
+                "Count": list(status_counts.values())
+            })
+            
+            fig = px.bar(
+                status_df, 
+                x="Status",
+                y="Count",
+                title="Assets by Status",
+                color="Status",
+                color_discrete_sequence=px.colors.qualitative.Bold
+            )
+            
+            st.plotly_chart(fig)
+            
+            # Create tabs for each status
+            status_tabs = st.tabs(list(asset_by_status.keys()))
+            
+            for i, (status, status_assets) in enumerate(asset_by_status.items()):
+                with status_tabs[i]:
+                    for asset in status_assets:
+                        with st.expander(f"{asset.get('name', 'Unnamed Asset')} - {asset.get('project', 'Unknown')}"):
+                            st.write(f"**Type:** {asset.get('asset_type', 'Unknown')}")
+                            st.write(f"**Assigned to:** {asset.get('assigned_to', 'Unassigned')}")
+                            st.write(f"**Progress:** {asset.get('progress', 0)}%")
+                            st.write(f"**Due date:** {asset.get('due_date', 'Not set')}")
+                            st.progress(asset.get('progress', 0) / 100)
+    else:
+        st.info("No assets found. Add an asset to get started.")
+
+def display_system_page():
+    """Display the system settings and status page"""
+    st.subheader("⚙️ System")
+    
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("API Server")
+        st.subheader("API Status")
         
         # Check API health
-        start_time = time.time()
         try:
-            response = requests.get(f"{API_BASE_URL}/health", timeout=3)
-            response_time = time.time() - start_time
+            health_response = requests.get(f"{API_BASE_URL}/health", timeout=3)
             
-            if response.status_code == 200:
-                api_data = response.json()
-                st.success(f"✅ API Server is running (response time: {response_time:.2f}s)")
+            if health_response.status_code == 200:
+                health_data = health_response.json()
                 
-                # Display API version and timestamp
-                st.info(f"API Version: {api_data.get('version', 'Unknown')}")
-                timestamp = api_data.get('timestamp')
-                if timestamp:
-                    try:
-                        timestamp_dt = datetime.fromisoformat(timestamp)
-                        st.info(f"Server Time: {timestamp_dt.strftime('%Y-%m-%d %H:%M:%S')}")
-                    except:
-                        st.info(f"Server Time: {timestamp}")
+                st.success("✅ API Service is running normally")
                 
-                # Display database status
-                if api_data.get('database') == 'connected':
-                    st.success("✅ Database is connected")
-                else:
-                    st.error(f"❌ Database is disconnected: {api_data.get('error', 'Unknown error')}")
+                # Display API health information
+                st.json(health_data)
             else:
-                st.error(f"❌ API server returned status code: {response.status_code}")
-        except requests.exceptions.ConnectionError:
-            st.error("❌ Could not connect to API Server: Connection refused")
-        except requests.exceptions.Timeout:
-            st.error("❌ API Server connection timed out")
+                st.error(f"❌ API Service is not responding properly (Status: {health_response.status_code})")
         except Exception as e:
             st.error(f"❌ Could not connect to API Server: {str(e)}")
     

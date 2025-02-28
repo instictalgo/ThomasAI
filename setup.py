@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="thomas_ai",
-    version="1.05",
+    version="1.06",
     description="AI-powered management system for game development projects",
     author="Thomas AI Team",
     author_email="your-email@example.com",
@@ -23,7 +23,11 @@ setup(
         "python-multipart==0.0.5",
         "networkx",
         "psutil",
-        "pytest"
+        "pytest",
+        # Document processing dependencies
+        "PyPDF2==3.0.1",
+        "python-docx==0.8.11",
+        "openai==1.3.0"
     ],
     extras_require={
         "dev": [

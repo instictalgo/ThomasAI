@@ -43,6 +43,51 @@ def main():
     # Display header
     st.title("💬 Chat with Thomas AI")
     st.markdown("Your AI Chief Operating Officer for game development management")
+    
+    # Add a description of Thomas AI's capabilities
+    with st.expander("About Thomas AI - Your Game Development Partner", expanded=False):
+        st.markdown("""
+        ## Thomas AI Capabilities
+        
+        Thomas AI is your AI Chief Operating Officer, specialized in game development management and designed to provide industry-leading expertise and support. Thomas is built with extensive knowledge of:
+        
+        ### Game Design & Development
+        - **Game Mechanics Design**: Advising on core gameplay loops, mechanics, and systems
+        - **Game Economy Design**: Balancing in-game economies, monetization strategies, and player progression
+        - **Development Pipelines**: Optimizing workflows for efficient game production
+        - **Platform-Specific Considerations**: Knowledge of requirements for different platforms (mobile, PC, console)
+        
+        ### Project Management
+        - **Production Timelines**: Creating and managing realistic development schedules
+        - **Resource Allocation**: Optimizing team resources across different game projects
+        - **Risk Assessment**: Identifying potential bottlenecks and development risks
+        - **Milestone Planning**: Breaking projects into manageable phases with clear deliverables
+        
+        ### Financial Management
+        - **Budget Planning**: Creating and managing game development budgets
+        - **Cost Tracking**: Monitoring expenses across projects and teams
+        - **ROI Analysis**: Assessing potential returns on different game features or projects
+        - **Funding Options**: Knowledge of different funding models for game development
+        
+        ### Team Management
+        - **Team Structure**: Advising on optimal team compositions for different game types
+        - **Skill Assessment**: Identifying necessary skills for specific game projects
+        - **Contractor Management**: Guidelines for working with external partners and freelancers
+        
+        ### Market Intelligence
+        - **Industry Trends**: Knowledge of current and emerging trends in game development
+        - **Competitive Analysis**: Understanding the market landscape for different game genres
+        - **Player Demographics**: Insights into target audiences for various game types
+        - **Marketing Strategies**: Approaches for player acquisition and community building
+        
+        ### Technical Knowledge
+        - **Engine Capabilities**: Understanding of game engine features and limitations
+        - **Performance Optimization**: Strategies for optimizing game performance
+        - **Cross-Platform Development**: Considerations for multi-platform releases
+        - **Technical Requirements**: Knowledge of platform-specific technical requirements
+        
+        Thomas integrates with your project data to provide contextual, data-driven advice tailored to your specific game projects. Ask questions about any aspect of game development, and Thomas will provide thoughtful, industry-informed responses.
+        """)
 
     # Sidebar for context controls
     st.sidebar.title("Data Context")
@@ -57,6 +102,21 @@ def main():
         st.session_state.messages = []
         st.session_state.assistant.reset_conversation()
         st.experimental_rerun()
+    
+    # Add a help section with usage examples
+    with st.sidebar.expander("How to use Thomas AI", expanded=False):
+        st.markdown("""
+        ### Getting the Most from Thomas AI
+        
+        Thomas AI works best when you:
+        
+        1. **Be Specific**: Ask detailed questions about your game projects
+        2. **Provide Context**: Enable relevant data contexts in the sidebar
+        3. **Ask Follow-ups**: Dive deeper with follow-up questions
+        4. **Explore Topics**: Ask about game design, team management, finances, or market trends
+        
+        Thomas continuously learns and improves based on your interactions!
+        """)
 
     # Display chat messages
     for message in st.session_state.messages:
@@ -125,11 +185,12 @@ def main():
     st.sidebar.markdown("---")
     st.sidebar.subheader("Example Questions")
     st.sidebar.markdown("""
-    - "What's our total budget for Anime Stars?"
-    - "How much have we paid to employee X?"
-    - "What's the status of our current projects?"
-    - "Which assets are behind schedule?"
-    - "What's our burn rate for the Tower Defense game?"
+    - "What are the current trends in free-to-play mobile game monetization?"
+    - "How should we structure our team for a mid-sized MMORPG project?"
+    - "What's a reasonable budget allocation for marketing a indie roguelike game?"
+    - "What should our development timeline look like for a casual mobile puzzle game?"
+    - "How can we improve player retention in our battle royale game?"
+    - "What metrics should we track for our free-to-play mobile game?"
     """)
 
 if __name__ == "__main__":
